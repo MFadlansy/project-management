@@ -6,6 +6,20 @@ import { Transition } from '@headlessui/react';
 import { Link, useForm, usePage } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
 
+// Import tipe PageProps dari @/types
+import { PageProps } from '@/types';
+
+// Definisikan tipe User lengkap sesuai yang dibagikan oleh HandleInertiaRequests.php
+interface UserProfile {
+    id: number;
+    name: string;
+    email: string;
+    username: string; // Tambahkan ini
+    roles: string[]; // Tambahkan ini
+    permissions: string[]; // Tambahkan ini
+    email_verified_at?: string; // Tambahkan ini jika ada
+}
+
 export default function UpdateProfileInformation({
     mustVerifyEmail,
     status,
@@ -15,7 +29,9 @@ export default function UpdateProfileInformation({
     status?: string;
     className?: string;
 }) {
-    const user = usePage().props.auth.user;
+    // Gunakan tipe PageProps dengan custom UserProfile
+    const { props } = usePage<PageProps & { auth: { user: UserProfile } }>();
+    const user = props.auth.user; // Sekarang 'user' akan memiliki semua properti yang dibagikan
 
     const { data, setData, patch, errors, processing, recentlySuccessful } =
         useForm({
@@ -74,6 +90,7 @@ export default function UpdateProfileInformation({
                     <InputError className="mt-2" message={errors.email} />
                 </div>
 
+                {/* Perbaikan: user.email_verified_at bisa jadi string atau null, bukan hanya null */}
                 {mustVerifyEmail && user.email_verified_at === null && (
                     <div>
                         <p className="mt-2 text-sm text-gray-800">

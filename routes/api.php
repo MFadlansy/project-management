@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\TaskController; // Tambahkan ini
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
@@ -27,9 +28,21 @@ Route::middleware(['auth:api'])->group(function () {
     Route::delete('/users/{id}', [UserController::class, 'destroy'])->middleware('permission:manage users');
 
     // Project Management
-    Route::get('/projects', [ProjectController::class, 'index'])->middleware('permission:view project');
-    Route::post('/projects', [ProjectController::class, 'store'])->middleware('permission:create project');
-    Route::get('/projects/{project}', [ProjectController::class, 'show'])->middleware('permission:view project')->name('projects.show'); // Tambahkan .name() juga jika ingin pakai route() helper untuk show
-    Route::put('/projects/{project}', [ProjectController::class, 'update'])->middleware('permission:update project')->name('projects.update'); // <--- TAMBAHKAN INI
-    Route::delete('/projects/{project}', [ProjectController::class, 'destroy'])->middleware('permission:delete project')->name('projects.destroy'); // <--- TAMBAHKAN INI JUGA
+    Route::get('/projects', [ProjectController::class, 'index'])->middleware('permission:view project')->name('projects.index');
+    Route::post('/projects', [ProjectController::class, 'store'])->middleware('permission:create project')->name('projects.store');
+    Route::get('/projects/{project}', [ProjectController::class, 'show'])->middleware('permission:view project')->name('projects.show'); // Ini sudah diberi nama
+    Route::put('/projects/{project}', [ProjectController::class, 'update'])->middleware('permission:update project')->name('projects.update');
+    Route::delete('/projects/{project}', [ProjectController::class, 'destroy'])->middleware('permission:delete project')->name('projects.destroy');
+
+    // Task Management (Bersarang di bawah Project)
+    Route::prefix('projects/{project}')->group(function () {
+        Route::get('/tasks', [TaskController::class, 'index'])->middleware('permission:view task')->name('tasks.index');
+        Route::post('/tasks', [TaskController::class, 'store'])->middleware('permission:create task')->name('tasks.store');
+        Route::get('/tasks/{task}', [TaskController::class, 'show'])->middleware('permission:view task')->name('tasks.show');
+        Route::put('/tasks/{task}', [TaskController::class, 'update'])->middleware('permission:update task')->name('tasks.update');
+        Route::delete('/tasks/{task}', [TaskController::class, 'destroy'])->middleware('permission:delete task')->name('tasks.destroy');
+    });
+
+    // Rute terpisah untuk mengambil daftar user yang bisa ditugaskan
+    Route::get('/assignable-users', [TaskController::class, 'assignableUsers'])->middleware('permission:assign tasks')->name('assignable.users');
 });

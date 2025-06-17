@@ -1,4 +1,3 @@
-// resources/js/Pages/Admin/Role/edit.tsx
 import React, { useState, useEffect } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, usePage, router } from '@inertiajs/react';
@@ -22,8 +21,8 @@ interface EditUserProps {
 
 export default function EditUser({ id }: EditUserProps) {
     const { toast } = useToast();
-    const { auth } = usePage().props;
-    const initialUser: UserData | null = usePage().props.user as UserData | null; // Cek apakah user dikirim sebagai props
+    const { auth } = usePage().props; // Ini mungkin akan diakses oleh komponen lain, tapi tidak langsung di sini
+    const initialUser: UserData | null = usePage().props.user as UserData | null; // Jika user dikirim sebagai props (jarang untuk edit)
 
     const [form, setForm] = useState({
         name: '',
@@ -36,42 +35,35 @@ export default function EditUser({ id }: EditUserProps) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // Fetch user data from API if not provided via Inertia props
+    // Fetch user data from API
     useEffect(() => {
         const fetchUserData = async () => {
             setLoading(true);
             setError(null);
             try {
-                // Periksa apakah user sudah dikirim sebagai props dari Inertia
-                // Jika belum, lakukan fetch data user berdasarkan ID
-                if (initialUser && initialUser.id === id) {
-                    setForm({
-                        name: initialUser.name,
-                        username: initialUser.username,
-                        email: initialUser.email,
-                        password: '',
-                        password_confirmation: '',
-                        role: initialUser.roles && initialUser.roles.length > 0 ? initialUser.roles[0].name : 'team_member',
-                    });
-                } else {
-                    const response = await fetch(`/api/users/${id}`, {
-                        headers: {
-                            'Authorization': `Bearer ${localStorage.getItem('token')}`
-                        }
-                    });
-                    if (!response.ok) {
-                        throw new Error('Gagal mengambil data pengguna.');
+                // Jika user tidak dikirim sebagai props dari Inertia, lakukan fetch data user berdasarkan ID
+                // Ini penting untuk memastikan data terisi saat pertama kali halaman edit dibuka
+                const tokenFromLocalStorage = localStorage.getItem('access_token');
+                console.log('Token read from localStorage in EditUser:', tokenFromLocalStorage); // Untuk debugging
+
+                const response = await fetch(`/api/users/${id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${tokenFromLocalStorage}` // <--- PASTIKAN INI MENGGUNAKAN 'access_token'
                     }
-                    const userData = await response.json();
-                    setForm({
-                        name: userData.name,
-                        username: userData.username,
-                        email: userData.email,
-                        password: '',
-                        password_confirmation: '',
-                        role: userData.roles && userData.roles.length > 0 ? userData.roles[0].name : 'team_member',
-                    });
+                });
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ message: 'Gagal memparsing error response.' }));
+                    throw new Error(errorData.message || `Gagal mengambil data pengguna. Status: ${response.status}`);
                 }
+                const userData = await response.json();
+                setForm({
+                    name: userData.name,
+                    username: userData.username,
+                    email: userData.email,
+                    password: '', // Password tidak diisi otomatis untuk keamanan
+                    password_confirmation: '',
+                    role: userData.roles && userData.roles.length > 0 ? userData.roles[0].name : 'team_member',
+                });
             } catch (err: any) {
                 console.error('Error fetching user data:', err);
                 setError(err.message || 'Terjadi kesalahan saat memuat data pengguna.');
@@ -88,14 +80,15 @@ export default function EditUser({ id }: EditUserProps) {
         if (id) {
             fetchUserData();
         }
-    }, [id, initialUser, toast]);
+    }, [id, toast]); // initialUser dihapus dari dependensi jika tidak dipakai untuk inisialisasi form
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
+        setLoading(true); // Mulai loading saat submit
 
-        const dataToSend: any = { ...form }; // Tambahkan 'as any' atau ': any'
-        // Hapus password jika kosong agar tidak diupdate
+        const dataToSend: any = { ...form };
+        // Hapus password jika kosong agar tidak diupdate di backend
         if (!dataToSend.password) {
             delete dataToSend.password;
             delete dataToSend.password_confirmation;
@@ -106,7 +99,7 @@ export default function EditUser({ id }: EditUserProps) {
                 method: 'PUT', // Menggunakan metode PUT untuk update
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+                    'Authorization': `Bearer ${localStorage.getItem('access_token')}`, // <--- PASTIKAN INI MENGGUNAKAN 'access_token'
                 },
                 body: JSON.stringify(dataToSend),
             });
@@ -127,13 +120,15 @@ export default function EditUser({ id }: EditUserProps) {
                 description: 'User berhasil diperbarui!',
             });
 
-            router.visit('/admin/role'); // Kembali ke daftar user
+            router.visit(route('user.index')); // Kembali ke daftar user
         } catch (err: any) {
             toast({
                 title: 'Error',
                 description: err.message || 'Terjadi kesalahan.',
                 variant: 'destructive',
             });
+        } finally {
+            setLoading(false); // Selesai loading
         }
     };
 
@@ -225,6 +220,7 @@ export default function EditUser({ id }: EditUserProps) {
 
                         <div>
                             <Label htmlFor="role">Peran</Label>
+                            {/* Jika Anda menggunakan Shadcn Select, pastikan komponennya sudah ada */}
                             <Select
                                 value={form.role}
                                 onValueChange={(value: string) => setForm({ ...form, role: value })}
@@ -241,11 +237,11 @@ export default function EditUser({ id }: EditUserProps) {
                         </div>
 
                         <div className="flex justify-end gap-3 mt-6">
-                            <Button type="button" variant="outline" onClick={() => router.visit('/admin/role')}>
+                            <Button type="button" variant="outline" onClick={() => router.visit(route('user.index'))}>
                                 Batal
                             </Button>
-                            <Button type="submit">
-                                Perbarui Pengguna
+                            <Button type="submit" disabled={loading}>
+                                {loading ? 'Memperbarui...' : 'Perbarui Pengguna'}
                             </Button>
                         </div>
                     </form>

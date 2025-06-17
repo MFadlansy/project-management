@@ -12,18 +12,19 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        // Reset cached roles and permissions
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // 1. Buat Permissions
         $permissions = [
             'manage users',
             'create project',
             'update project',
             'delete project',
-            'view project', // <--- Tambahkan izin ini
-            'assign tasks',
-            'update tasks',
+            'view project',   // <--- PASTIKAN INI ADA
+            'create task',    // <--- PASTIKAN INI ADA
+            'view task',      // <--- PASTIKAN INI ADA
+            'update task',    // <--- PASTIKAN INI ADA
+            'delete task',    // <--- PASTIKAN INI ADA
+            'assign tasks',   // <--- PASTIKAN INI ADA
             'comment tasks',
             'view dashboard',
         ];
@@ -32,14 +33,18 @@ class UserSeeder extends Seeder
             Permission::firstOrCreate(['name' => $permission]);
         }
 
-        // 2. Buat Roles dan tetapkan Permissions
         $adminRole = Role::firstOrCreate(['name' => 'admin']);
         $adminRole->givePermissionTo([
             'manage users',
             'create project',
             'update project',
             'delete project',
-            'view project', // <--- Tambahkan izin ini untuk admin
+            'view project',   // <--- PASTIKAN INI ADA untuk admin
+            'create task',
+            'view task',
+            'update task',
+            'delete task',
+            'assign tasks',
             'comment tasks',
             'view dashboard',
         ]);
@@ -48,22 +53,25 @@ class UserSeeder extends Seeder
         $pmRole->givePermissionTo([
             'create project',
             'update project',
-            'view project', // <--- Tambahkan izin ini untuk project manager
+            'view project',   // <--- PASTIKAN INI ADA untuk PM
+            'create task',
+            'view task',
+            'update task',
+            'delete task',
             'assign tasks',
-            'update tasks',
             'comment tasks',
             'view dashboard',
         ]);
 
         $teamRole = Role::firstOrCreate(['name' => 'team_member']);
         $teamRole->givePermissionTo([
-            'view project', // <--- Tambahkan izin ini untuk team member (jika bisa melihat proyek orang lain)
-            'update tasks',
+            'view project',
+            'view task',      // <--- PASTIKAN INI ADA untuk anggota tim
+            'update task',    // <--- PASTIKAN INI ADA untuk anggota tim
             'comment tasks',
             'view dashboard',
         ]);
 
-        // 3. Buat dummy users dan tetapkan Roles
         User::firstOrCreate(
             ['email' => 'admin@example.com'],
             ['name' => 'Admin', 'username' => 'admin', 'password' => Hash::make('admin123')]

@@ -15,24 +15,25 @@ import { useToast } from '@/hooks/use-toast';
 
 interface Props {
     projectId: number;
+    taskId: number;
     children: React.ReactNode;
     onDeleted: () => void;
 }
 
-export function DialogDeleteProject({ projectId, children, onDeleted }: Props) {
+export function DialogDeleteTask({ projectId, taskId, children, onDeleted }: Props) {
     const [open, setOpen] = useState(false);
     const { toast } = useToast();
 
     const handleDelete = () => {
-        router.delete(route('projects.destroy', { project: projectId }), {
+        router.delete(route('tasks.destroy', { project: projectId, task: taskId }), {
             onSuccess: () => {
                 setOpen(false);
-                toast({ title: 'Berhasil', description: 'Proyek berhasil dihapus.', variant: 'default' });
+                toast({ title: 'Berhasil', description: 'Tugas berhasil dihapus.', variant: 'default' });
                 onDeleted();
             },
             onError: (errors) => {
-                console.error('Error deleting project:', errors);
-                toast({ title: 'Error', description: 'Gagal menghapus proyek.', variant: 'destructive' });
+                console.error('Error deleting task:', errors);
+                toast({ title: 'Error', description: 'Gagal menghapus tugas.', variant: 'destructive' });
             },
         });
     };
@@ -42,9 +43,9 @@ export function DialogDeleteProject({ projectId, children, onDeleted }: Props) {
             <AlertDialogTrigger asChild>{children}</AlertDialogTrigger>
             <AlertDialogContent>
                 <AlertDialogHeader>
-                    <AlertDialogTitle>Hapus Proyek?</AlertDialogTitle>
+                    <AlertDialogTitle>Hapus Tugas?</AlertDialogTitle>
                     <AlertDialogDescription>
-                        Aksi ini tidak bisa dibatalkan. Proyek ini akan dihapus permanen, termasuk semua tugas dan komentar di dalamnya.
+                        Aksi ini tidak bisa dibatalkan. Tugas ini akan dihapus permanen.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

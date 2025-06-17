@@ -7,10 +7,11 @@ use Inertia\Inertia;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\ProjectController;
-use App\Models\Project; 
+use App\Http\Controllers\ProjectController; // Pastikan ini ada
+use App\Http\Controllers\TaskController;    // Pastikan ini ada
+use App\Models\Project;                    // Pastikan ini ada
+use App\Models\Task;                      // Pastikan ini ada
 
-// ... (sisa kode routes/web.php)
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -57,9 +58,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/admin/role/edit/{id}', function ($id) {
             return Inertia::render('Admin/Role/edit', ['id' => $id]);
         })->name('user.edit');
+
     });
 
-    // Rute Proyek <--- PERBARUI ATAU TAMBAHKAN BAGIAN INI
+    // Rute Proyek
     Route::middleware(['permission:view project|create project|update project|delete project'])->group(function () {
         Route::get('/projects', function () {
             return Inertia::render('Projects/index');
@@ -69,11 +71,27 @@ Route::middleware('auth')->group(function () {
             return Inertia::render('Projects/create');
         })->name('projects.create');
 
-        // Untuk edit, kita harus mengirimkan data proyek sebagai props
-        Route::get('/projects/{project}/edit', function (Project $project) { // Import Project model
+        Route::get('/projects/{project}/edit', function (Project $project) {
             return Inertia::render('Projects/edit', ['project' => $project]);
         })->name('projects.edit');
-    });
 
-    // Anda bisa tambahkan rute untuk task dan comment di sini juga, dengan middleware permission yang sesuai
+        // Rute Detail Proyek (Projects/Show.tsx) <--- UBAH INI KE CONTROLLER
+        Route::get('/projects/{project}', [ProjectController::class, 'show'])->name('projects.show');
+
+        // Rute Tugas (Tasks) - Bersarang di bawah Proyek
+        Route::prefix('projects/{project}')->group(function () {
+            Route::get('/tasks/create', function (Project $project) {
+                return Inertia::render('Tasks/Create', ['project' => $project]);
+            })->name('tasks.create');
+
+            Route::get('/tasks/{task}/edit', function (Project $project, Task $task) {
+                // Pastikan tugas ini milik proyek yang benar
+                if ($task->project_id !== $project->id) {
+                    abort(404);
+                }
+                $task->load('assignee'); // Load relasi assignee untuk form edit
+                return Inertia::render('Tasks/Edit', ['project' => $project, 'task' => $task]);
+            })->name('tasks.edit');
+        });
+    });
 });

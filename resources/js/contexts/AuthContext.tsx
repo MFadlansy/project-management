@@ -54,7 +54,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const login = (accessToken: string, userData: User) => {
-        localStorage.setItem('access_token', accessToken);
+        localStorage.setItem('access_token', accessToken); // <--- PASTIKAN INI 'access_token'
         localStorage.setItem('user', JSON.stringify(userData));
         setToken(accessToken);
         setUser(userData);
